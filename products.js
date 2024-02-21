@@ -6,10 +6,10 @@ let delProductModal = null;
 const app = createApp({
   data() {
     return {
-      urlAPI: "https://vue3-course-api.hexschool.io/v2",
+      apiUrl: "https://vue3-course-api.hexschool.io/v2",
       apiPath: "winnie05",
       //全部產品資料
-      productList: [],
+      products: [],
       //產品分類
       categoryList: [],
       //按鈕動作狀態
@@ -19,7 +19,8 @@ const app = createApp({
         imagesUrl: []
       },
       //頁碼
-      pagination: {}
+      pagination: {},
+      isNew: false,
     }
   },
   methods: {
@@ -42,67 +43,62 @@ const app = createApp({
       }
     },
     //取得全部商品資料
-    getData(page = 1, category) {
-      let url = `${this.urlAPI}/api/${this.apiPath}/admin/products?page=${page}`
+    getProducts(page = 1, category) {
+      const url = `${this.apiUrl}/api/${this.apiPath}/admin/products?page=${page}`;
       if (category) { url += `&category=${category}` }
 
       axios.get(url)
         .then(res => {
           const { products, pagination } = res.data
-          this.productList = products
+          this.products = products
           this.pagination = pagination          
         })
-        .catch(err => console.log(err.response.data.message))
+        .catch((err) => {
+          alert(err.response.data.message);
+          window.location = 'login.html';
+        })
     },
     //取得商品分類
     getCategory() {
-      let url = `${this.urlAPI}/api/${this.apiPath}/admin/products/all`
+      let url = `${this.apiUrl}/api/${this.apiPath}/admin/products/all`
 
       axios.get(url)
         .then(res => {
-          const productList = Object.values(res.data.products)
-          const categoryList = new Set(productList.map((item => item.category)))
+          const products = Object.values(res.data.products)
+          const categoryList = new Set(products.map((item => item.category)))
           this.categoryList = [...categoryList]
         })
         .catch(err => console.log(err.response.data.message))
     },
     //確認登入
-    checkLogin() {
-      axios.post(`${this.urlAPI}/api/user/check`)
-        .then(res => {
-          this.getData()
-          this.getCategory()
+    checkAdmin() {
+      const url = `${this.apiUrl}/api/user/check`;
+      axios.post(url)
+        .then(() => {
+          this.getProducts();
+          this.getCategory();
         })
-        .catch(err => {
-          Swal.fire("請先登入，再執行操作").then(
-            res =>
-              window.location = "./index.html"
-          )
+        .catch((err) => {
+          Swal.fire("請先登入");
+          window.location = "index.html";
         })
-    },
+    }
   },
   mounted() {
-    //取得 cookie
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("hexstoken="))
-      ?.split("=")[1];
-    //預設帶入 token
-    axios.defaults.headers.common['Authorization'] = token;
-
-    //取得全部商品資料
-    this.checkLogin()
+    const token = document.cookie.replace(/(?:(?:^|.*;\s*)hexToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+    axios.defaults.headers.common.Authorization = token;
+    this.checkAdmin();
   },
 })
 
-// 新增&編輯 modal template
+// 新增 & 編輯 modal template
 app.component("product-modal", {
   template: "#product-modal",
   props: ["actionState", "tempProduct"],
   data() {
     return {
-      urlAPI: "https://vue3-course-api.hexschool.io/v2",
-      apiPath: "annchou",
+      apiUrl: "https://vue3-course-api.hexschool.io/v2",
+      apiPath: "winnie05",
       //資料庫對照表
       dataKey: {
         title: "標題",
@@ -122,9 +118,9 @@ app.component("product-modal", {
   methods: {
     handleData() {
       const method = this.actionState === "create" ? "post" : "put"
-      let url = `${this.urlAPI}/api/${this.apiPath}/admin/product`
+      let url = `${this.apiUrl}/api/${this.apiPath}/admin/product`
       if (this.actionState === "edit") {
-        url = `${this.urlAPI}/api/${this.apiPath}/admin/product/${this.tempProduct.id}`
+        url = `${this.apiUrl}/api/${this.apiPath}/admin/product/${this.tempProduct.id}`
       }
 
       axios[method](url, { "data": this.tempProduct })
@@ -159,8 +155,8 @@ app.component("delete-modal", {
   props: ["tempProduct"],
   data() {
     return {
-      urlAPI: "https://vue3-course-api.hexschool.io/v2",
-      apiPath: "annchou",
+      apiUrl: "https://vue3-course-api.hexschool.io/v2",
+      apiPath: "winnie05",
     }
   },
   mounted() {
@@ -171,7 +167,7 @@ app.component("delete-modal", {
   },
   methods: {
     deleteData() {
-      const url = `${this.urlAPI}/api/${this.apiPath}/admin/product/${this.tempProduct.id}`
+      const url = `${this.apiUrl}/api/${this.apiPath}/admin/product/${this.tempProduct.id}`
 
       axios.delete(url)
         .then(res => {
