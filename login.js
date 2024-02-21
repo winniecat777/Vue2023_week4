@@ -21,9 +21,12 @@ createApp({
         // 寫入 cookie token
         // expires 設置有效時間
         document.cookie = `hexToken=${token};expires=${new Date(expired)}; path=/`;
-        window.location = 'products.html';
-      }).catch((err) => {
-        alert(err.response.data.message);
+        Swal.fire("登入成功").then(()=>{
+          window.location = "products.html"
+        })
+      })
+      .catch((err) => {
+        Swal.fire(err.response.data.message);
       });
     },
   },
